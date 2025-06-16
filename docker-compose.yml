@@ -1,0 +1,44 @@
+# Docker Compose file for Ollama and Open WebUI
+# This file defines the services, networks, and volumes for the application.
+# Make sure to set the HOST_OFFLINE_PATH environment variable before running this compose file.
+
+version: "3.8"
+
+services:
+  ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ollama
+    
+    environment:
+      - OFFLINE_MODELS_PATH=/offline_models
+    volumes:
+      - type: bind
+        source: ${HOST_OFFLINE_PATH}
+        target: /offline_models
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    depends_on:
+      - ollama
+    ports:
+      - "8080:8080"
+    environment:
+      - WEBUI_AUTH=False
+      - OLLAMA_URL=http://ollama:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - open-webui-data:/app/backend/data
+    restart: always
+
+volumes:
+  ollama_data:
+  open-webui-data:
+
